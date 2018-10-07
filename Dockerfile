@@ -6,7 +6,10 @@ ENV DEBIAN_FRONTED=noninteractive
 
 # Used to set the docker group ID
 # Set default value of 497, which is the group ID used by AWS Linux ECS Instance
-ARG DOCKER_GID=497
+ARG DOCKER_GID=998
+
+# Used to control Docker Compose versions installed
+ARG DOCKER_COMPOSE=1.22.0
 
 # Change to root user
 USER root
@@ -14,9 +17,13 @@ USER root
 
 # Create 'docker' group with provided group ID 
 # and add 'jenkins' user to it
-RUN groupadd -g ${DOCKER_GID:-497} docker && \  
+RUN groupadd -g ${DOCKER_GID:-998} docker && \  
     usermod -a -G docker jenkins && \
     usermod -a -G users jenkins
+
+# Install helpers
+RUN apt-get update -y && \
+    apt-get install nano tree
 
 # Install base packages
 RUN apt-get update -y && \
@@ -45,7 +52,8 @@ RUN apt-get update -y && \
 RUN pip install docker-compose==${DOCKER_COMPOSE:-1.22.0} && \
     pip install ansible boto boto3
 
-RUN chmod -R o+rwx /usr/share/jenkins 
+RUN chgrp jenkins /usr/share/jenkins
+RUN chmod -R g+rwx /usr/share/jenkins
 
 # Run Jenkins as dedicated non-root user
 USER jenkins  
