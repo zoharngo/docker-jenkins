@@ -1,0 +1,109 @@
+ {
+    "AWSTemplateFormatVersion":"2010-09-09",
+    "Description":"Jenkins Stack",
+
+    "Parameters":{
+        "VpcId":{
+            "Type":"AWS::EC2::VPC::Id",
+            "Description": "The target VPC Id"
+        },
+        "SubnetId":{
+            "Type":"AWS::EC2::Subnet::Id",
+            "Description": "The target subnet Id"
+        },
+        "KeyName":{
+            "Type":"String",
+            "Description": "The key pair that is allowd SSH access"
+        }
+    },
+    "Resources":{
+        "EC2Instance":{
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImagedId": "ami-06b685336aa497c15",
+                "InstanceType": "t2.micro",
+                "SubnetId": {
+                    "Ref": "SubnetId"
+                },
+                "KeyName":{
+                    "Ref": "KeyName"
+                },
+                "SecurityGroupIds":[{
+                    "Ref":"EC2InstanceSecurityGroup"
+                }],
+                "IamInstanceProfile": {
+                    "Ref":"EC2InstanceProfile"
+                },
+                "UserData":{
+                    "Fn::Base64":{
+                        "Fn::Join": ["",[
+                            "#!/bin/bash\n",
+                            "echo ECS_CLUSTER=",
+                            { "Ref": "EcsCluster" },
+                                ">> /etc/ecs/ecs.config\n",
+                                "groupadd -g 1000 jenkins\n",
+                                "useradd -u 1000  -g jenkins\n",
+                                "mkdir -p /ecs/jenkins_home\n",
+                                "chown -R jenkins:jenkins /ecs/jenkins_home\n"                            
+                        ]]}
+                },
+                "Tags":[{ "Key": "Name",
+                           "Value": {
+                               "Fn::Join": ["",[{
+                                   "Ref": "AWS::StackName"
+                               }, "-instance"]]
+                           }}]
+            }
+        },
+        "EC2InstanceSecurityGroup":{
+            "Type":"AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription":{"Fn::Join": ["",[
+                    {"Ref":"AWS::StackName"},
+                    "ingress security group"
+                ]]},
+                "VpcId":{"Ref": "VpcId"},
+                "SecurityGroupIngress":[
+                    {
+                        "IpProtocol": "tcp",
+                        "FormPort": "8080",
+                        "ToPort": "8080",
+                        "SourceSecurityGroupId": {
+                            "Ref": "ElbSecurityGroup"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FormPort": "22",
+                        "ToPort": "22",
+                        "CidIp": "0.0.0.0/0"
+                    }
+                ]
+            },
+            "EC2InstanceProfile":{
+                "Type": "AWS::IAM::InstanceProfile",
+                "Properties": {
+                    "Path": "/",
+                    "Roles": [{ "ref": "EC2InstanceRole"}]
+                }
+            },
+            "EC2InstanceRole":{
+                "Type": "AWS::IAM::Role",
+                "Properties": {
+                    "AssumeRolePolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect":"Allow",
+                                "Principal":{"Services": ["ec2.amazonaws.com"]},
+                                "Action": ["sts:AssumeRole"]
+                            }
+                        ]
+                    },
+                    "path":"/",
+                    "ManagedPolicyArns": [ "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"]
+                }
+            }
+        }
+    }  
+ }
