@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTED=noninteractive
 
 # Used to set the docker group ID
 # Set default value of 497, which is the group ID used by AWS Linux ECS Instance
-ARG DOCKER_GID=998
+ARG DOCKER_GID=497
 
 # Used to control Docker Compose versions installed
 ARG DOCKER_COMPOSE=1.22.0
@@ -17,7 +17,7 @@ USER root
 
 # Create 'docker' group with provided group ID 
 # and add 'jenkins' user to it
-RUN groupadd -g ${DOCKER_GID:-998} docker && \  
+RUN groupadd -g ${DOCKER_GID:-497} docker && \  
     usermod -a -G docker jenkins && \
     usermod -a -G users jenkins
 
