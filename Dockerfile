@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:2.144
+FROM jenkins/jenkins:2.151
 MAINTAINER Zohar Nyego <zoharngo@gmail.com>
 
 # Suppress apt installation warnings
